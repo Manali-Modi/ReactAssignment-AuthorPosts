@@ -8,25 +8,34 @@ import moment from "moment";
 const AuthorPosts = () => {
 
   const [allPosts, setAllPosts] = useState(null);
+  const [totalPages, setTotalPages] = useState(null);
   const [currentPage, setCurrentPage] = useState(0);
 
   const getData = async () => {
     const allData = await fetch('https://hn.algolia.com/api/v1/search_by_date?tags=story&page=' + currentPage);
     const jsonData = await allData.json();
-
+    if (totalPages == null) {
+      setTotalPages(jsonData.nbPages);
+    }
     const postData = jsonData.hits;
-    setAllPosts(postData);
+
+    if (allPosts == null) {
+      setAllPosts(postData);
+    } else {
+      setAllPosts([...allPosts, ...postData]);
+    }
   }
 
   useEffect(() => {
     getData();
-  }, [])
+  }, [currentPage])
 
   const rowPostItem = ({ item, index }) => {
 
-    console.warn(item.isSeleted);
     return (
-      <View style={styles.card}>
+      <View style={[styles.card,
+      { backgroundColor: colors.white }
+      ]}>
         <View style={[styles.horizontal_view, { justifyContent: 'space-between' }]}>
           <Text
             numberOfLines={3}
@@ -37,8 +46,7 @@ const AuthorPosts = () => {
             thumbColor={colors.accent} //
             trackColor={{ false: colors.track_light_color, true: colors.track_dark_color }}
             style={styles.toggle}
-            value={item.isSeleted}
-            onValueChange={handleClick} />
+            value={false} />
         </View>
 
         <View style={styles.horizontal_view}>
@@ -61,8 +69,13 @@ const AuthorPosts = () => {
     <FlatList
       data={allPosts}
       renderItem={rowPostItem}
+      onEndReached={() => {
+        if (currentPage < totalPages - 1) {
+          setCurrentPage(currentPage + 1)
+        }
+      }}
       style={{ marginVertical: 8 }} />
   ) : <></>
 }
 
-export default AuthorPosts;
+export default AuthorPosts;	
