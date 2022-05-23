@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from "react";
-import { View, Text, Switch, FlatList, TouchableWithoutFeedback, ActivityIndicator, ScrollView, RefreshControl } from 'react-native';
+import { View, Text, Switch, FlatList, TouchableWithoutFeedback, ActivityIndicator, ScrollView, RefreshControl, Alert } from 'react-native';
 import { styles } from "../utils/styles";
 import { colors } from "../utils/colors";
 import { strings } from "../utils/strings";
 import moment from "moment";
+import NetInfo from "@react-native-community/netinfo";
 
 const AuthorPosts = ({ navigation }) => {
 
@@ -14,6 +15,7 @@ const AuthorPosts = ({ navigation }) => {
   const [dummy, setDummy] = useState(false);
   const [isFetching, setFetching] = useState(false);
   const [isLoading, setLoading] = useState(false);
+  const [hasConnetion, setConnection] = useState(false);
 
   const getData = async () => {
     const allData = await fetch('https://hn.algolia.com/api/v1/search_by_date?tags=story&page=' + currentPage);
@@ -31,8 +33,29 @@ const AuthorPosts = ({ navigation }) => {
     setLoading(false);
   }
 
+  const fetchData = () => {
+    NetInfo.fetch().then(state => {
+      if (state.isConnected) {
+        setConnection(true);
+        getData();
+      } else {
+        setConnection(false);
+        Alert.alert(strings.no_connection_title,
+          strings.no_connection_msg,
+          [
+            {
+              text: 'Try Again',
+              onPress: () => {
+                fetchData();
+              }
+            }
+          ])
+      }
+    })
+  }
+
   useEffect(() => {
-    getData();
+    fetchData();
   }, [currentPage])
 
   const rowPostItem = ({ item, index }) => {
@@ -116,7 +139,12 @@ const AuthorPosts = ({ navigation }) => {
         style={{ paddingVertical: 8, marginBottom: 4 }} />
       {isLoading && <ActivityIndicator color={colors.primary_dark} style={styles.loading} />}
     </ScrollView>
-  ) : <ActivityIndicator color={colors.primary_dark} style={{ marginTop: 8 }} />
+  ) : <View>
+    {
+      hasConnetion &&
+      <ActivityIndicator color={colors.primary_dark} style={{ marginTop: 8 }} />
+    }
+  </View>
 }
 
 export default AuthorPosts;	
