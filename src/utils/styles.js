@@ -31,5 +31,13 @@ export const styles = StyleSheet.create({
     alignSelf:'flex-end',
     fontSize: 12,
     color: colors.primary_dark
+  },
+  loading: {
+    left: 0,
+    right: 0,
+    top: 0,
+    bottom: 0,
+    justifyContent: 'flex-end',
+    margin:4
   }
 })
