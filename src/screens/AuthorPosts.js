@@ -46,8 +46,9 @@ const AuthorPosts = ({ navigation }) => {
     }
   }
 
-  const fetchData = () => {
-    if (hasInternetConnection) {
+  const fetchData = async () => {
+    const hasConnection = await hasInternetConnection();
+    if (hasConnection) {
       setLoaderVisible(true);
       getData();
     } else {

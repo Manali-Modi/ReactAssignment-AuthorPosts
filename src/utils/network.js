@@ -1,10 +1,9 @@
 import NetInfo from "@react-native-community/netinfo";
 
-export const hasInternetConnection = () => {
-  NetInfo.fetch().then(state => {
-    if (state.isConnected) {
-      return true;
-    }
-    return false;
-  })
+export const hasInternetConnection = async () => {
+  const connection = await NetInfo.fetch()
+  if (connection.isConnected) {
+    return true;
+  }
+  return false;
 }
