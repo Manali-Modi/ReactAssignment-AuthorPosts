@@ -1,57 +1,66 @@
 import React, { useState, useEffect } from "react";
-import { View, Text, Switch, FlatList, TouchableWithoutFeedback, ActivityIndicator, ScrollView, RefreshControl, Alert } from 'react-native';
+import { View, Text, Switch, FlatList, TouchableWithoutFeedback, ActivityIndicator, ScrollView, RefreshControl } from 'react-native';
 import { styles } from "../utils/styles";
 import { colors } from "../utils/colors";
 import { strings } from "../utils/strings";
 import moment from "moment";
-import NetInfo from "@react-native-community/netinfo";
+import { getPostsData } from "../api";
+import { showAlertDialog } from "../components/AlertDialog";
+import { hasInternetConnection } from "../utils/network";
 
 const AuthorPosts = ({ navigation }) => {
 
   const [allPosts, setAllPosts] = useState(null);
   const [totalPages, setTotalPages] = useState(null);
   const [currentPage, setCurrentPage] = useState(0);
-  let [tempArr, setTempArr] = useState([]);
+  const [tempArr, setTempArr] = useState([]);
   const [dummy, setDummy] = useState(false);
   const [isFetching, setFetching] = useState(false);
   const [isLoading, setLoading] = useState(false);
-  const [hasConnetion, setConnection] = useState(false);
+  const [isLoaderVisible, setLoaderVisible] = useState(false);
 
   const getData = async () => {
-    const allData = await fetch('https://hn.algolia.com/api/v1/search_by_date?tags=story&page=' + currentPage);
-    const jsonData = await allData.json();
-    if (totalPages == null) {
-      setTotalPages(jsonData.nbPages);
-    }
-    const postData = jsonData.hits;
-
-    if (allPosts == null) {
-      setAllPosts(postData);
+    const allData = await getPostsData(currentPage);
+    if (allData != null) {
+      if (totalPages == null) {
+        setTotalPages(allData.nbPages);
+      }
+  
+      const postData = allData.hits;
+      if (allPosts == null) {
+        setAllPosts(postData);
+      } else {
+        setAllPosts([...allPosts, ...postData]);
+      }
+      setLoading(false);
     } else {
-      setAllPosts([...allPosts, ...postData]);
+      setLoaderVisible(false);
+      showAlertDialog(
+        strings.api_err_title,
+        strings.api_err_msg,
+        strings.try_again,
+        () => {
+          fetchData();
+        }
+      )
     }
-    setLoading(false);
   }
 
   const fetchData = () => {
-    NetInfo.fetch().then(state => {
-      if (state.isConnected) {
-        setConnection(true);
-        getData();
-      } else {
-        setConnection(false);
-        Alert.alert(strings.no_connection_title,
-          strings.no_connection_msg,
-          [
-            {
-              text: 'Try Again',
-              onPress: () => {
-                fetchData();
-              }
-            }
-          ])
-      }
-    })
+    if (hasInternetConnection) {
+      setLoaderVisible(true);
+      getData();
+    } else {
+      setLoaderVisible(false);
+      showAlertDialog(
+        strings.no_connection_title,
+        strings.no_connection_msg,
+        strings.try_again,
+        () => {
+          fetchData();
+        }
+      )
+    }
   }
 
   useEffect(() => {
@@ -141,7 +150,7 @@ const AuthorPosts = ({ navigation }) => {
     </ScrollView>
   ) : <View>
     {
-      hasConnetion &&
+      isLoaderVisible &&
       <ActivityIndicator color={colors.primary_dark} style={{ marginTop: 8 }} />
     }
   </View>
